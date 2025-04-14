@@ -50,11 +50,11 @@ void setup() {
     
     Serial_println("Connecting to WiFi with saved config...");
     
-    if ( WiFi.getPersistent() ) WiFi.begin();
-    else  {
+    // if ( WiFi.getPersistent() ) WiFi.begin();
+    // else  {
         WiFi.begin(rtcData.ssid, rtcData.psk, rtcData.channel, rtcData.bssid);
     //WiFi.config(localIP, gateway, subnet, dns1, dns2);
-    }
+    // }
     
     int attempts = 0;
     while (WiFi.status() != WL_CONNECTED && attempts < 20) {
@@ -117,8 +117,9 @@ void setup() {
         //     Serial_printf("upgrade progress %lu from %lu\r", len, size );
         //  });
       }
-      if(line.startsWith("Content-Type: ")) {
-        if(!line.substring(14).startsWith("application/octet-stream")) {
+      if(line.startsWith("Content-Type:")) {
+        // if(!line.substring(sizeof("Content-Type:")).startsWith("application/octet-stream")) {
+          if(!line.endsWith("octet-stream")) {
             Serial_printf("Wrong type: %s\n", line.c_str());   
             return;
         }
@@ -129,14 +130,16 @@ void setup() {
     // Потоковая запись в Updater
     if(Update.isRunning()) {
       Serial_printf("Start update[%d]\n", size);
-      uint8_t buffer[128];
+      uint8_t buffer[1024];
       size_t writed = 0;
+      bool ledState = digitalRead(BUILTIN_LED);
       while(client->connected() && writed != size ) {
         unsigned int available = client->available();
         if( available ) {
             auto readed = client->readBytes(buffer, min( sizeof(buffer), available));
             writed += Update.write(buffer, readed);
-            digitalWrite(BUILTIN_LED, !digitalRead(BUILTIN_LED));
+            ledState = !ledState;
+            digitalWrite(BUILTIN_LED, ledState);
             Serial_print("writed "); Serial_println(writed);
         }
         
